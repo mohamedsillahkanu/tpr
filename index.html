@@ -1,0 +1,2651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICF-SL Test Positivity Rate & Choropleth Maps</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            font-family: 'Oswald', Arial, sans-serif;
+            color: #000000;
+            font-weight: 500;
+            padding: 20px;
+        }
+
+        .page-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            background-color: #004080;
+            color: #ffffff;
+            padding: 25px 30px;
+            text-align: center;
+            margin-bottom: 15px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .logo-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+
+        .logo-box {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-box img {
+            width: 100px;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .page-header h3 {
+            margin: 12px 0 5px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ffffff;
+        }
+
+        .page-header .tagline {
+            margin: 0;
+            font-size: 10px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .page-header h1 {
+            margin: 20px 0 10px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+
+        .page-header .subtitle {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .content-card {
+            border: 4px double #004080;
+            border-radius: 12px;
+            padding: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+
+        .content-inner {
+            padding: 25px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 2px dashed #004080;
+            text-align: center;
+            margin: 1.5rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #0056b3;
+            background: #e7f3ff;
+        }
+
+        .upload-section h3 {
+            color: #004080;
+            margin-bottom: 1rem;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .upload-section p {
+            color: #000000;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background: #004080;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 6px;
+            border: 2px solid #004080;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Oswald', Arial, sans-serif;
+            margin-top: 1rem;
+        }
+
+        .file-input-wrapper:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .section-header {
+            background-color: #004080;
+            color: #ffffff;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-icon {
+            background: #ffffff;
+            color: #004080;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .stats-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 2px solid #004080;
+            transition: all 0.2s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 64, 128, 0.2);
+        }
+
+        .stats-card h4 {
+            color: #666;
+            font-size: 11px;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .stats-card .metric-value {
+            font-size: 1.6rem;
+            color: #004080;
+            margin-bottom: 0.25rem;
+            font-weight: 700;
+        }
+
+        .stats-card p {
+            color: #666;
+            font-size: 11px;
+        }
+
+        .stats-card.warning .metric-value {
+            color: #dc3545;
+        }
+
+        .stats-card.success .metric-value {
+            color: #28a745;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: 2px solid #004080;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Oswald', Arial, sans-serif;
+            transition: all 0.2s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #004080;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #004080;
+        }
+
+        .btn-secondary:hover {
+            background: #004080;
+            color: #ffffff;
+        }
+
+        .btn-gold {
+            background: #ffc107;
+            color: #000000;
+            border-color: #ffc107;
+        }
+
+        .btn-gold:hover {
+            background: #e0a800;
+            border-color: #e0a800;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: #ffffff;
+            border-color: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            border-color: #218838;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: #e7f3ff;
+            border: 2px solid #004080;
+            color: #004080;
+        }
+
+        .info-message {
+            background: #e7f3ff;
+            color: #004080;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 2px solid #004080;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            color: #004080;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #004080;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #ffffff;
+            color: #000000;
+            font-family: 'Oswald', Arial, sans-serif;
+            font-weight: 500;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 0 3px rgba(0, 64, 128, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .config-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #004080;
+            margin: 1rem 0;
+        }
+
+        .config-card h4 {
+            color: #004080;
+            margin-bottom: 1rem;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 1rem;
+            border: 2px solid #004080;
+            border-radius: 6px;
+            background: #ffffff;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+            color: #000000;
+        }
+
+        .checkbox-item:hover {
+            background: #e7f3ff;
+        }
+
+        .checkbox-item input {
+            margin-right: 0.75rem;
+            accent-color: #004080;
+            width: 18px;
+            height: 18px;
+        }
+
+        .loading-spinner {
+            border: 4px solid #e7f3ff;
+            border-top: 4px solid #004080;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #004080;
+        }
+
+        .feature-card h4 {
+            color: #004080;
+            margin-bottom: 1rem;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .feature-card ol, .feature-card ul {
+            color: #000000;
+            line-height: 1.8;
+            padding-left: 1.5rem;
+        }
+
+        .feature-card li {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .feature-card strong {
+            color: #004080;
+        }
+
+        .page-footer {
+            background-color: #004080;
+            color: #ffffff;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.7;
+            font-weight: 500;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .page-footer p {
+            margin: 6px 0 0;
+            font-size: 12px;
+            color: #ffffff;
+        }
+
+        .formula-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .formula-box strong {
+            color: #856404;
+        }
+
+        .color-palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .color-palette-option {
+            border: 3px solid transparent;
+            border-radius: 8px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-palette-option:hover {
+            border-color: #004080;
+        }
+
+        .color-palette-option.selected {
+            border-color: #004080;
+            background: #e7f3ff;
+        }
+
+        .color-palette-option label {
+            display: block;
+            text-align: center;
+            font-weight: 700;
+            color: #004080;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .palette-preview {
+            display: flex;
+            height: 30px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .palette-preview div {
+            flex: 1;
+        }
+
+        .maps-container {
+            display: grid;
+            gap: 20px;
+            margin: 1.5rem 0;
+        }
+
+        .map-wrapper {
+            background: #ffffff;
+            border: 2px solid #004080;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .map-wrapper h5 {
+            color: #004080;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .map-canvas {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+
+        .legend-container {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .legend-title {
+            font-weight: 700;
+            color: #004080;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .legend-scale {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-gradient {
+            flex: 1;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .shared-legend {
+            background: #ffffff;
+            border: 2px solid #004080;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .shared-legend h4 {
+            color: #004080;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow: auto;
+            border: 2px solid #004080;
+            border-radius: 6px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .results-table th {
+            background: #004080;
+            color: #ffffff;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .results-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .tpr-high {
+            color: #dc3545;
+            font-weight: 700;
+        }
+
+        .tpr-medium {
+            color: #ffc107;
+            font-weight: 700;
+        }
+
+        .tpr-low {
+            color: #28a745;
+            font-weight: 700;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #004080;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .content-inner {
+                padding: 15px;
+            }
+            .page-header h1 {
+                font-size: 20px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <div class="logo-row">
+                <div class="logo-box">
+                    <img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="ICF-SL Logo">
+                </div>
+            </div>
+            <h3>Informatics Consultancy Firm-Sierra Leone<br>(ICF-SL)</h3>
+            <p class="tagline"><em>Driving Data-Driven Solutions for Health and Development</em></p>
+            <h1>TEST POSITIVITY RATE & CHOROPLETH MAPS</h1>
+            <p class="subtitle">Calculate TPR by Year and Visualize with Customizable Subplot Maps</p>
+        </div>
+
+        <div class="content-card">
+            <div class="content-inner">
+
+                <!-- Alert Container -->
+                <div id="alertContainer"></div>
+
+                <!-- Upload Section -->
+                <div id="uploadSection">
+                    <div class="upload-section">
+                        <h3>STEP 1: UPLOAD YOUR DATA FILE</h3>
+                        <p>Upload a CSV or Excel file with confirmed cases and test data</p>
+                        <label class="file-input-wrapper">
+                            Choose Data File
+                            <input type="file" id="dataFileInput" accept=".csv,.xlsx,.xls">
+                        </label>
+                        <div id="dataFileName" style="margin-top: 10px; color: #28a745; font-weight: 700;"></div>
+                    </div>
+
+                    <div class="upload-section">
+                        <h3>STEP 2: UPLOAD SHAPEFILE (FOR MAPS)</h3>
+                        <p>Upload Shapefile components (.shp, .dbf, .shx) for geographic boundaries</p>
+                        
+                        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 1rem;">
+                            <div style="text-align: center;">
+                                <label class="file-input-wrapper" style="background: #17a2b8; border-color: #17a2b8;">
+                                    Upload Shapefile (.zip)
+                                    <input type="file" id="shapefileZipInput" accept=".zip">
+                                </label>
+                                <p style="font-size: 11px; color: #666; margin-top: 5px;">Recommended: Zipped shapefile folder</p>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed #ddd;">
+                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;"><strong>Or upload individual shapefile components:</strong></p>
+                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <div>
+                                    <label class="file-input-wrapper" style="padding: 10px 16px; font-size: 12px;">
+                                        .SHP File *
+                                        <input type="file" id="shpFileInput" accept=".shp">
+                                    </label>
+                                    <div id="shpFileName" style="font-size: 11px; color: #28a745; margin-top: 3px;"></div>
+                                </div>
+                                <div>
+                                    <label class="file-input-wrapper" style="padding: 10px 16px; font-size: 12px;">
+                                        .DBF File *
+                                        <input type="file" id="dbfFileInput" accept=".dbf">
+                                    </label>
+                                    <div id="dbfFileName" style="font-size: 11px; color: #28a745; margin-top: 3px;"></div>
+                                </div>
+                                <div>
+                                    <label class="file-input-wrapper" style="padding: 10px 16px; font-size: 12px; background: #6c757d; border-color: #6c757d;">
+                                        .SHX File
+                                        <input type="file" id="shxFileInput" accept=".shx">
+                                    </label>
+                                    <div id="shxFileName" style="font-size: 11px; color: #28a745; margin-top: 3px;"></div>
+                                </div>
+                                <div>
+                                    <label class="file-input-wrapper" style="padding: 10px 16px; font-size: 12px; background: #6c757d; border-color: #6c757d;">
+                                        .PRJ File
+                                        <input type="file" id="prjFileInput" accept=".prj">
+                                    </label>
+                                    <div id="prjFileName" style="font-size: 11px; color: #28a745; margin-top: 3px;"></div>
+                                </div>
+                            </div>
+                            <p style="font-size: 10px; color: #999; margin-top: 8px;">* Required files</p>
+                            <button id="processShapefilesBtn" class="btn btn-primary" style="margin-top: 15px;" onclick="processShapefiles()" disabled>
+                                Process Shapefile Components
+                            </button>
+                        </div>
+                        
+                        <div id="geoFileName" style="margin-top: 15px; color: #28a745; font-weight: 700;"></div>
+                    </div>
+
+                    <div id="uploadProgress" class="hidden">
+                        <div class="loading-spinner"></div>
+                        <p style="text-align: center;">Processing your files...</p>
+                    </div>
+
+                    <!-- Features Section -->
+                    <div class="section-header">
+                        <span class="section-icon">?</span>
+                        <span class="section-title">HOW IT WORKS</span>
+                    </div>
+                    
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <h4>TPR Calculation</h4>
+                            <ol>
+                                <li><strong>Upload:</strong> CSV/Excel with test data</li>
+                                <li><strong>Select:</strong> Confirmed & Test columns</li>
+                                <li><strong>Calculate:</strong> TPR = (Conf/Test) × 100</li>
+                                <li><strong>Group by:</strong> Year and Location</li>
+                                <li><strong>Export:</strong> Results as Excel/CSV</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Choropleth Maps</h4>
+                            <ul>
+                                <li><strong>Format:</strong> Shapefile (.shp+.dbf)</li>
+                                <li><strong>Upload:</strong> .zip or individual files</li>
+                                <li><strong>Multi-column:</strong> Merge on multiple keys</li>
+                                <li><strong>Inner Join:</strong> Matches only</li>
+                                <li><strong>Download:</strong> PNG images</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Color Palettes</h4>
+                            <ul>
+                                <li><strong>Sequential:</strong> Blues, Greens, Reds</li>
+                                <li><strong>Diverging:</strong> Red-Yellow-Green</li>
+                                <li><strong>Viridis:</strong> Color-blind friendly</li>
+                                <li><strong>Plasma:</strong> High contrast</li>
+                                <li><strong>Custom:</strong> Define your own</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div id="configSection" class="hidden">
+                    <div class="section-header">
+                        <span class="section-icon">⚙</span>
+                        <span class="section-title">CONFIGURE TPR CALCULATION</span>
+                    </div>
+
+                    <div class="formula-box">
+                        <strong>Test Positivity Rate (TPR) Formula:</strong><br><br>
+                        <code style="font-size: 18px;">TPR = (Confirmed Cases / Total Tests) × 100</code><br><br>
+                        <span style="color: #666; font-size: 12px;">Results expressed as percentage (%)</span>
+                    </div>
+
+                    <div class="config-card">
+                        <h4>Required Column Mappings</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="confirmedColumn">Confirmed Cases Column</label>
+                                <select id="confirmedColumn" class="form-control">
+                                    <option value="">-- Select Column --</option>
+                                </select>
+                                <small style="color: #666; font-size: 12px;">Number of confirmed positive cases</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="testColumn">Total Tests Column</label>
+                                <select id="testColumn" class="form-control">
+                                    <option value="">-- Select Column --</option>
+                                </select>
+                                <small style="color: #666; font-size: 12px;">Total number of tests conducted</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="yearColumn">Year Column</label>
+                                <select id="yearColumn" class="form-control">
+                                    <option value="">-- Select Column --</option>
+                                </select>
+                                <small style="color: #666; font-size: 12px;">Year for grouping data</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <h4>Geographic Merge Configuration (Inner Join)</h4>
+                        <div class="info-message" style="margin-bottom: 1rem;">
+                            <strong>How merging works:</strong> Select matching columns from your Excel data and Shapefile attributes. 
+                            Data will be joined where ALL selected columns match (like an inner join). 
+                            Only locations found in BOTH datasets will appear on the map.
+                            <br><br>
+                            <strong>Important:</strong> Select columns in the SAME ORDER for proper matching (e.g., District ↔ DNAME, then Chiefdom ↔ CHNAME)
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Excel Data Columns (for merge)</label>
+                                <div class="checkbox-group" id="excelColumnsCheckbox" style="max-height: 200px;">
+                                    <!-- Populated dynamically -->
+                                </div>
+                                <small style="color: #666; font-size: 12px;">Check columns to use for merging (order matters)</small>
+                                <div id="selectedExcelCols" style="margin-top: 8px; padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 12px; min-height: 30px;">
+                                    <strong>Selected:</strong> <span id="excelColsList">None</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Shapefile Properties (for merge)</label>
+                                <div class="checkbox-group" id="shapePropsCheckbox" style="max-height: 200px;">
+                                    <!-- Populated dynamically -->
+                                </div>
+                                <small style="color: #666; font-size: 12px;">Check matching properties in SAME order</small>
+                                <div id="selectedShapeCols" style="margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 12px; min-height: 30px;">
+                                    <strong>Selected:</strong> <span id="shapeColsList">None</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="mergePreview" class="hidden" style="margin-top: 1rem; padding: 1rem; background: #d4edda; border: 2px solid #28a745; border-radius: 6px;">
+                            <strong style="color: #155724;">Merge Preview:</strong>
+                            <div id="mergePreviewContent" style="margin-top: 0.5rem; font-size: 13px;"></div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-secondary" onclick="clearMergeSelections()">Clear Selections</button>
+                            <button class="btn btn-primary" onclick="previewMerge()">Preview Merge</button>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <h4>Map Layout Configuration</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="mapColumns">Number of Columns</label>
+                                <select id="mapColumns" class="form-control">
+                                    <option value="1">1 Column</option>
+                                    <option value="2">2 Columns</option>
+                                    <option value="3">3 Columns</option>
+                                    <option value="4" selected>4 Columns</option>
+                                    <option value="5">5 Columns</option>
+                                    <option value="6">6 Columns</option>
+                                </select>
+                                <small style="color: #666; font-size: 12px;">Maps per row</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="mapWidth">Map Width (px)</label>
+                                <input type="number" id="mapWidth" class="form-control" value="300" min="150" max="600">
+                                <small style="color: #666; font-size: 12px;">Width of each map</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="mapHeight">Map Height (px)</label>
+                                <input type="number" id="mapHeight" class="form-control" value="250" min="150" max="600">
+                                <small style="color: #666; font-size: 12px;">Height of each map</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="legendType">Legend Display</label>
+                                <select id="legendType" class="form-control">
+                                    <option value="individual">Individual Legend per Map</option>
+                                    <option value="shared">Shared Legend (all maps)</option>
+                                </select>
+                                <small style="color: #666; font-size: 12px;">How legends are displayed</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="legendMode">Legend Scale Mode</label>
+                                <select id="legendMode" class="form-control" onchange="toggleLegendOptions()">
+                                    <option value="fixed">Fixed (0% - 100%)</option>
+                                    <option value="categorical">Categorical (Custom Breaks)</option>
+                                    <option value="dynamic">Dynamic (Data Min - Max)</option>
+                                </select>
+                                <small style="color: #666; font-size: 12px;">How legend values are scaled</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Categorical Legend Options -->
+                        <div id="categoricalOptions" class="hidden" style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border: 2px solid #ffc107; border-radius: 6px;">
+                            <h5 style="color: #856404; margin-bottom: 1rem;">Custom Category Breaks</h5>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Number of Categories</label>
+                                    <select id="numCategories" class="form-control" onchange="updateCategoryInputs()">
+                                        <option value="3">3 Categories</option>
+                                        <option value="4">4 Categories</option>
+                                        <option value="5" selected>5 Categories</option>
+                                        <option value="6">6 Categories</option>
+                                        <option value="7">7 Categories</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="categoryBreaksContainer">
+                                <!-- Dynamic break inputs -->
+                            </div>
+                            <div style="margin-top: 0.5rem;">
+                                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="setDefaultBreaks()">Reset to Default</button>
+                                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px;" onclick="setWHOBreaks()">WHO TPR Thresholds</button>
+                            </div>
+                            <small style="color: #856404; font-size: 11px; display: block; margin-top: 0.5rem;">
+                                <strong>WHO TPR Thresholds:</strong> &lt;5% (Low), 5-10% (Moderate), 10-20% (High), &gt;20% (Very High)
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <h4>Select Color Palette</h4>
+                        <div class="color-palette-grid" id="colorPaletteGrid">
+                            <div class="color-palette-option selected" data-palette="blues" onclick="selectPalette(this)">
+                                <label>Blues</label>
+                                <div class="palette-preview">
+                                    <div style="background: #f7fbff;"></div>
+                                    <div style="background: #c6dbef;"></div>
+                                    <div style="background: #6baed6;"></div>
+                                    <div style="background: #2171b5;"></div>
+                                    <div style="background: #084594;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="reds" onclick="selectPalette(this)">
+                                <label>Reds</label>
+                                <div class="palette-preview">
+                                    <div style="background: #fff5f0;"></div>
+                                    <div style="background: #fcbba1;"></div>
+                                    <div style="background: #fb6a4a;"></div>
+                                    <div style="background: #cb181d;"></div>
+                                    <div style="background: #67000d;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="greens" onclick="selectPalette(this)">
+                                <label>Greens</label>
+                                <div class="palette-preview">
+                                    <div style="background: #f7fcf5;"></div>
+                                    <div style="background: #c7e9c0;"></div>
+                                    <div style="background: #74c476;"></div>
+                                    <div style="background: #238b45;"></div>
+                                    <div style="background: #00441b;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="oranges" onclick="selectPalette(this)">
+                                <label>Oranges</label>
+                                <div class="palette-preview">
+                                    <div style="background: #fff5eb;"></div>
+                                    <div style="background: #fdd0a2;"></div>
+                                    <div style="background: #fd8d3c;"></div>
+                                    <div style="background: #d94801;"></div>
+                                    <div style="background: #7f2704;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="purples" onclick="selectPalette(this)">
+                                <label>Purples</label>
+                                <div class="palette-preview">
+                                    <div style="background: #fcfbfd;"></div>
+                                    <div style="background: #dadaeb;"></div>
+                                    <div style="background: #9e9ac8;"></div>
+                                    <div style="background: #6a51a3;"></div>
+                                    <div style="background: #3f007d;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="viridis" onclick="selectPalette(this)">
+                                <label>Viridis</label>
+                                <div class="palette-preview">
+                                    <div style="background: #440154;"></div>
+                                    <div style="background: #3b528b;"></div>
+                                    <div style="background: #21918c;"></div>
+                                    <div style="background: #5ec962;"></div>
+                                    <div style="background: #fde725;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="plasma" onclick="selectPalette(this)">
+                                <label>Plasma</label>
+                                <div class="palette-preview">
+                                    <div style="background: #0d0887;"></div>
+                                    <div style="background: #7e03a8;"></div>
+                                    <div style="background: #cc4778;"></div>
+                                    <div style="background: #f89540;"></div>
+                                    <div style="background: #f0f921;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="rdylgn" onclick="selectPalette(this)">
+                                <label>Red-Yellow-Green</label>
+                                <div class="palette-preview">
+                                    <div style="background: #1a9850;"></div>
+                                    <div style="background: #91cf60;"></div>
+                                    <div style="background: #ffffbf;"></div>
+                                    <div style="background: #fc8d59;"></div>
+                                    <div style="background: #d73027;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="spectral" onclick="selectPalette(this)">
+                                <label>Spectral</label>
+                                <div class="palette-preview">
+                                    <div style="background: #9e0142;"></div>
+                                    <div style="background: #f46d43;"></div>
+                                    <div style="background: #ffffbf;"></div>
+                                    <div style="background: #66c2a5;"></div>
+                                    <div style="background: #5e4fa2;"></div>
+                                </div>
+                            </div>
+                            <div class="color-palette-option" data-palette="ylorbr" onclick="selectPalette(this)">
+                                <label>Yellow-Orange-Brown</label>
+                                <div class="palette-preview">
+                                    <div style="background: #ffffe5;"></div>
+                                    <div style="background: #fec44f;"></div>
+                                    <div style="background: #fe9929;"></div>
+                                    <div style="background: #d95f0e;"></div>
+                                    <div style="background: #662506;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <h4>Select Years to Map</h4>
+                        <div class="checkbox-group" id="yearCheckboxes">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-secondary" onclick="selectAllYears()">Select All</button>
+                            <button class="btn btn-secondary" onclick="deselectAllYears()">Deselect All</button>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 1.5rem;">
+                        <button class="btn btn-gold" onclick="calculateTPR()">Calculate TPR & Generate Maps</button>
+                        <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+                    </div>
+                </div>
+
+                <!-- Processing Section -->
+                <div id="processingSection" class="hidden">
+                    <div class="section-header">
+                        <span class="section-icon">⏳</span>
+                        <span class="section-title">PROCESSING</span>
+                    </div>
+                    <div class="config-card" style="text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 1rem; font-weight: 700; color: #004080;">Calculating TPR and generating maps...</p>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="hidden">
+                    <div class="section-header">
+                        <span class="section-icon">✓</span>
+                        <span class="section-title">TPR RESULTS & MAPS</span>
+                    </div>
+
+                    <div class="stats-grid" id="summaryStats">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Shared Legend (if selected) -->
+                    <div id="sharedLegendContainer" class="shared-legend hidden">
+                        <h4>Test Positivity Rate Legend (%)</h4>
+                        <div id="sharedLegend"></div>
+                    </div>
+
+                    <!-- Maps Container -->
+                    <div class="config-card">
+                        <h4>Choropleth Maps by Year</h4>
+                        <div class="maps-container" id="mapsContainer">
+                            <!-- Maps populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- TPR Data Table -->
+                    <div class="config-card">
+                        <h4>TPR Data by Location and Year</h4>
+                        <div class="table-container">
+                            <table class="results-table" id="tprTable">
+                                <!-- Populated dynamically -->
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 2rem 0;">
+                        <button class="btn btn-success" onclick="downloadTPRExcel()">Download TPR Data (Excel)</button>
+                        <button class="btn btn-primary" onclick="downloadTPRCSV()">Download TPR Data (CSV)</button>
+                        <button class="btn btn-gold" onclick="downloadSubplotImage()">Download All as Subplot (PNG)</button>
+                        <button class="btn btn-secondary" onclick="downloadAllMapsIndividual()">Download Maps Individually</button>
+                        <button class="btn btn-secondary" onclick="backToConfig()">Change Settings</button>
+                        <button class="btn btn-secondary" onclick="resetAll()">Start Over</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p style="margin: 0; font-weight: 700;">National Malaria Control Programme</p>
+            <p>Ministry of Health and Sanitation, Sierra Leone</p>
+            <p style="font-size: 11px;">Medical Stores Compound, Freetown, Sierra Leone</p>
+            <p style="font-size: 10px;">© 2025 Informatics Consultancy Firm-Sierra Leone (ICF-SL)</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let rawData = null;
+        let geoData = null;
+        let tprResults = null;
+        let availableColumns = [];
+        let availableYears = [];
+        let geoProperties = [];
+        let selectedPalette = 'blues';
+        
+        // Shapefile buffers
+        let shpBuffer = null;
+        let dbfBuffer = null;
+        let shxBuffer = null;
+        let prjBuffer = null;
+        
+        // Selection tracking for merge columns (order matters)
+        let selectedExcelColumns = [];
+        let selectedShapeColumns = [];
+        
+        // Color palettes
+        const colorPalettes = {
+            blues: ['#f7fbff', '#c6dbef', '#6baed6', '#2171b5', '#084594'],
+            reds: ['#fff5f0', '#fcbba1', '#fb6a4a', '#cb181d', '#67000d'],
+            greens: ['#f7fcf5', '#c7e9c0', '#74c476', '#238b45', '#00441b'],
+            oranges: ['#fff5eb', '#fdd0a2', '#fd8d3c', '#d94801', '#7f2704'],
+            purples: ['#fcfbfd', '#dadaeb', '#9e9ac8', '#6a51a3', '#3f007d'],
+            viridis: ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'],
+            plasma: ['#0d0887', '#7e03a8', '#cc4778', '#f89540', '#f0f921'],
+            rdylgn: ['#1a9850', '#91cf60', '#ffffbf', '#fc8d59', '#d73027'],
+            spectral: ['#9e0142', '#f46d43', '#ffffbf', '#66c2a5', '#5e4fa2'],
+            ylorbr: ['#ffffe5', '#fec44f', '#fe9929', '#d95f0e', '#662506']
+        };
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('dataFileInput').addEventListener('change', handleDataFileUpload);
+            document.getElementById('shapefileZipInput').addEventListener('change', handleShapefileZipUpload);
+            document.getElementById('shpFileInput').addEventListener('change', handleShpFileUpload);
+            document.getElementById('dbfFileInput').addEventListener('change', handleDbfFileUpload);
+            document.getElementById('shxFileInput').addEventListener('change', handleShxFileUpload);
+            document.getElementById('prjFileInput').addEventListener('change', handlePrjFileUpload);
+        });
+
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        function handleDataFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name;
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+
+            document.getElementById('uploadProgress').classList.remove('hidden');
+
+            if (fileExtension === 'csv') {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        rawData = results.data;
+                        availableColumns = Object.keys(results.data[0] || {});
+                        document.getElementById('dataFileName').textContent = `✓ Loaded: ${fileName} (${results.data.length} rows)`;
+                        document.getElementById('uploadProgress').classList.add('hidden');
+                        checkBothFilesLoaded();
+                    },
+                    error: function(error) {
+                        showAlert('Error reading CSV: ' + error.message, 'error');
+                        document.getElementById('uploadProgress').classList.add('hidden');
+                    }
+                });
+            } else if (['xlsx', 'xls'].includes(fileExtension)) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        rawData = XLSX.utils.sheet_to_json(firstSheet);
+                        availableColumns = Object.keys(rawData[0] || {});
+                        document.getElementById('dataFileName').textContent = `✓ Loaded: ${fileName} (${rawData.length} rows)`;
+                        document.getElementById('uploadProgress').classList.add('hidden');
+                        checkBothFilesLoaded();
+                    } catch (error) {
+                        showAlert('Error reading Excel: ' + error.message, 'error');
+                        document.getElementById('uploadProgress').classList.add('hidden');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                showAlert('Please upload a CSV or Excel file', 'error');
+                document.getElementById('uploadProgress').classList.add('hidden');
+            }
+        }
+
+        function handleShapefileZipUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            showAlert('Processing zipped shapefile...', 'info');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    shp(e.target.result).then(function(geojson) {
+                        geoData = geojson;
+                        
+                        // Handle if shp returns an array (multiple layers)
+                        if (Array.isArray(geoData)) {
+                            geoData = geoData[0];
+                        }
+                        
+                        // Extract properties from first feature
+                        if (geoData.features && geoData.features.length > 0) {
+                            geoProperties = Object.keys(geoData.features[0].properties || {});
+                        }
+                        
+                        document.getElementById('geoFileName').textContent = `✓ Shapefile Loaded: ${file.name} (${geoData.features ? geoData.features.length : 0} features)`;
+                        document.getElementById('uploadProgress').classList.add('hidden');
+                        checkBothFilesLoaded();
+                    }).catch(function(error) {
+                        showAlert('Error processing shapefile: ' + error.message, 'error');
+                        document.getElementById('uploadProgress').classList.add('hidden');
+                    });
+                } catch (error) {
+                    showAlert('Error reading shapefile zip: ' + error.message, 'error');
+                    document.getElementById('uploadProgress').classList.add('hidden');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleShpFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                shpBuffer = e.target.result;
+                document.getElementById('shpFileName').textContent = `✓ ${file.name}`;
+                checkShapefileComponents();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleDbfFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                dbfBuffer = e.target.result;
+                document.getElementById('dbfFileName').textContent = `✓ ${file.name}`;
+                checkShapefileComponents();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleShxFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                shxBuffer = e.target.result;
+                document.getElementById('shxFileName').textContent = `✓ ${file.name}`;
+                checkShapefileComponents();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handlePrjFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                prjBuffer = e.target.result;
+                document.getElementById('prjFileName').textContent = `✓ ${file.name}`;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function checkShapefileComponents() {
+            const btn = document.getElementById('processShapefilesBtn');
+            // Enable button if we have at least .shp and .dbf
+            if (shpBuffer && dbfBuffer) {
+                btn.disabled = false;
+                btn.style.background = '#28a745';
+                btn.style.borderColor = '#28a745';
+            } else {
+                btn.disabled = true;
+                btn.style.background = '#004080';
+                btn.style.borderColor = '#004080';
+            }
+        }
+
+        function processShapefiles() {
+            if (!shpBuffer || !dbfBuffer) {
+                showAlert('Please upload at least .shp and .dbf files', 'error');
+                return;
+            }
+
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            showAlert('Processing shapefile components...', 'info');
+
+            try {
+                // Combine the buffers into a format shpjs can use
+                shp.combine([
+                    shp.parseShp(shpBuffer, prjBuffer),
+                    shp.parseDbf(dbfBuffer)
+                ]).then(function(geojson) {
+                    geoData = geojson;
+                    
+                    // Extract properties from first feature
+                    if (geoData.features && geoData.features.length > 0) {
+                        geoProperties = Object.keys(geoData.features[0].properties || {});
+                    }
+                    
+                    document.getElementById('geoFileName').textContent = `✓ Shapefile Processed: ${geoData.features ? geoData.features.length : 0} features loaded`;
+                    document.getElementById('uploadProgress').classList.add('hidden');
+                    showAlert('Shapefile processed successfully!', 'success');
+                    checkBothFilesLoaded();
+                }).catch(function(error) {
+                    showAlert('Error combining shapefile components: ' + error.message, 'error');
+                    document.getElementById('uploadProgress').classList.add('hidden');
+                });
+            } catch (error) {
+                showAlert('Error processing shapefiles: ' + error.message, 'error');
+                document.getElementById('uploadProgress').classList.add('hidden');
+            }
+        }
+
+        function checkBothFilesLoaded() {
+            if (rawData && geoData) {
+                showAlert('Both files loaded successfully! Configure your settings below.', 'success');
+                populateColumnSelectors();
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('configSection').classList.remove('hidden');
+            }
+        }
+
+        function populateColumnSelectors() {
+            const confirmedSelect = document.getElementById('confirmedColumn');
+            const testSelect = document.getElementById('testColumn');
+            const yearSelect = document.getElementById('yearColumn');
+            const excelColsContainer = document.getElementById('excelColumnsCheckbox');
+            const shapePropsContainer = document.getElementById('shapePropsCheckbox');
+
+            // Clear existing options
+            [confirmedSelect, testSelect, yearSelect].forEach(select => {
+                select.innerHTML = '<option value="">-- Select Column --</option>';
+            });
+            excelColsContainer.innerHTML = '';
+            shapePropsContainer.innerHTML = '';
+
+            // Populate data columns
+            availableColumns.forEach(col => {
+                confirmedSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                testSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                yearSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                
+                // Excel columns as checkboxes
+                excelColsContainer.innerHTML += `
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="${col}" onchange="updateExcelSelection()">
+                        <span>${col}</span>
+                    </label>
+                `;
+            });
+
+            // Populate geo properties as checkboxes
+            geoProperties.forEach(prop => {
+                shapePropsContainer.innerHTML += `
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="${prop}" onchange="updateShapeSelection()">
+                        <span>${prop}</span>
+                    </label>
+                `;
+            });
+
+            // Auto-select common column names
+            autoSelectColumns();
+        }
+
+        function updateExcelSelection() {
+            const checkboxes = document.querySelectorAll('#excelColumnsCheckbox input[type="checkbox"]');
+            const newSelection = [];
+            
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    // If already in array, keep position; otherwise add to end
+                    if (!selectedExcelColumns.includes(cb.value)) {
+                        newSelection.push(cb.value);
+                    }
+                }
+            });
+            
+            // Preserve order of previously selected items that are still checked
+            selectedExcelColumns = selectedExcelColumns.filter(col => {
+                const cb = document.querySelector(`#excelColumnsCheckbox input[value="${col}"]`);
+                return cb && cb.checked;
+            });
+            
+            // Add newly checked items
+            newSelection.forEach(col => {
+                if (!selectedExcelColumns.includes(col)) {
+                    selectedExcelColumns.push(col);
+                }
+            });
+            
+            // Update display
+            document.getElementById('excelColsList').textContent = 
+                selectedExcelColumns.length > 0 ? selectedExcelColumns.join(' → ') : 'None';
+        }
+
+        function updateShapeSelection() {
+            const checkboxes = document.querySelectorAll('#shapePropsCheckbox input[type="checkbox"]');
+            const newSelection = [];
+            
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    if (!selectedShapeColumns.includes(cb.value)) {
+                        newSelection.push(cb.value);
+                    }
+                }
+            });
+            
+            // Preserve order of previously selected items that are still checked
+            selectedShapeColumns = selectedShapeColumns.filter(col => {
+                const cb = document.querySelector(`#shapePropsCheckbox input[value="${col}"]`);
+                return cb && cb.checked;
+            });
+            
+            // Add newly checked items
+            newSelection.forEach(col => {
+                if (!selectedShapeColumns.includes(col)) {
+                    selectedShapeColumns.push(col);
+                }
+            });
+            
+            // Update display
+            document.getElementById('shapeColsList').textContent = 
+                selectedShapeColumns.length > 0 ? selectedShapeColumns.join(' → ') : 'None';
+        }
+
+        function clearMergeSelections() {
+            selectedExcelColumns = [];
+            selectedShapeColumns = [];
+            
+            document.querySelectorAll('#excelColumnsCheckbox input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#shapePropsCheckbox input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            document.getElementById('excelColsList').textContent = 'None';
+            document.getElementById('shapeColsList').textContent = 'None';
+            document.getElementById('mergePreview').classList.add('hidden');
+        }
+
+        function autoSelectColumns() {
+            const confirmedPatterns = ['conf', 'confirmed', 'positive', 'cases', 'malconf'];
+            const testPatterns = ['test', 'tested', 'examined', 'maltest', 'total_test'];
+            const yearPatterns = ['year', 'yr'];
+
+            availableColumns.forEach(col => {
+                const colLower = col.toLowerCase();
+                
+                if (confirmedPatterns.some(p => colLower.includes(p))) {
+                    document.getElementById('confirmedColumn').value = col;
+                }
+                if (testPatterns.some(p => colLower.includes(p))) {
+                    document.getElementById('testColumn').value = col;
+                }
+                if (yearPatterns.some(p => colLower === p || colLower.includes(p))) {
+                    document.getElementById('yearColumn').value = col;
+                    extractYears(col);
+                }
+            });
+        }
+
+        function previewMerge() {
+            const locationCols = selectedExcelColumns;
+            const geoCols = selectedShapeColumns;
+
+            if (locationCols.length === 0 || geoCols.length === 0) {
+                showAlert('Please select at least one column from each side for merging', 'error');
+                return;
+            }
+
+            if (locationCols.length !== geoCols.length) {
+                showAlert(`Mismatch: You selected ${locationCols.length} Excel columns but ${geoCols.length} Shapefile properties. They must match.`, 'error');
+                return;
+            }
+
+            // Get unique combinations from Excel data
+            const excelKeys = new Set();
+            rawData.forEach(row => {
+                const key = locationCols.map(col => String(row[col] || '').trim().toLowerCase()).join('|');
+                if (key && !key.includes('|undefined')) {
+                    excelKeys.add(key);
+                }
+            });
+
+            // Get unique combinations from Shapefile
+            const shapeKeys = new Set();
+            const shapeKeyToName = {};
+            geoData.features.forEach(feature => {
+                const key = geoCols.map(col => String(feature.properties[col] || '').trim().toLowerCase()).join('|');
+                const displayName = geoCols.map(col => feature.properties[col]).join(' - ');
+                if (key) {
+                    shapeKeys.add(key);
+                    shapeKeyToName[key] = displayName;
+                }
+            });
+
+            // Find matches (inner join)
+            const matches = [...excelKeys].filter(k => shapeKeys.has(k));
+            const excelOnly = [...excelKeys].filter(k => !shapeKeys.has(k));
+            const shapeOnly = [...shapeKeys].filter(k => !excelKeys.has(k));
+
+            // Display preview
+            const previewDiv = document.getElementById('mergePreview');
+            const contentDiv = document.getElementById('mergePreviewContent');
+
+            let html = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                    <div style="text-align: center; padding: 0.5rem; background: #d4edda; border-radius: 4px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #155724;">${matches.length}</div>
+                        <div style="font-size: 11px; color: #155724;">Matched (will map)</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.5rem; background: #fff3cd; border-radius: 4px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #856404;">${excelOnly.length}</div>
+                        <div style="font-size: 11px; color: #856404;">Excel only (no shape)</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.5rem; background: #f8d7da; border-radius: 4px;">
+                        <div style="font-size: 24px; font-weight: 700; color: #721c24;">${shapeOnly.length}</div>
+                        <div style="font-size: 11px; color: #721c24;">Shape only (no data)</div>
+                    </div>
+                </div>
+                <div style="font-size: 12px;">
+                    <strong>Merge Keys:</strong> ${locationCols.join(' + ')} ↔ ${geoCols.join(' + ')}
+                </div>
+            `;
+
+            if (excelOnly.length > 0 && excelOnly.length <= 10) {
+                html += `<div style="font-size: 11px; margin-top: 0.5rem; color: #856404;">
+                    <strong>Unmatched from Excel:</strong> ${excelOnly.slice(0, 5).join(', ')}${excelOnly.length > 5 ? '...' : ''}
+                </div>`;
+            }
+
+            if (shapeOnly.length > 0 && shapeOnly.length <= 10) {
+                html += `<div style="font-size: 11px; margin-top: 0.5rem; color: #721c24;">
+                    <strong>Unmatched from Shape:</strong> ${shapeOnly.slice(0, 5).map(k => shapeKeyToName[k] || k).join(', ')}${shapeOnly.length > 5 ? '...' : ''}
+                </div>`;
+            }
+
+            contentDiv.innerHTML = html;
+            previewDiv.classList.remove('hidden');
+
+            if (matches.length === 0) {
+                showAlert('Warning: No matches found! Check that column values match between files.', 'error');
+            } else {
+                showAlert(`Found ${matches.length} matching locations for mapping.`, 'success');
+            }
+        }
+
+        function extractYears(yearCol) {
+            if (!yearCol) return;
+            
+            availableYears = [...new Set(rawData.map(row => row[yearCol]))].filter(y => y).sort();
+            
+            const container = document.getElementById('yearCheckboxes');
+            container.innerHTML = '';
+            
+            availableYears.forEach(year => {
+                container.innerHTML += `
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="${year}" checked>
+                        <span>${year}</span>
+                    </label>
+                `;
+            });
+        }
+
+        // Update years when year column changes
+        document.getElementById('yearColumn')?.addEventListener('change', function() {
+            extractYears(this.value);
+        });
+
+        function selectAllYears() {
+            document.querySelectorAll('#yearCheckboxes input').forEach(cb => cb.checked = true);
+        }
+
+        function deselectAllYears() {
+            document.querySelectorAll('#yearCheckboxes input').forEach(cb => cb.checked = false);
+        }
+
+        function selectPalette(element) {
+            document.querySelectorAll('.color-palette-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedPalette = element.dataset.palette;
+        }
+
+        // Legend configuration functions
+        function toggleLegendOptions() {
+            const mode = document.getElementById('legendMode').value;
+            const categoricalOptions = document.getElementById('categoricalOptions');
+            
+            if (mode === 'categorical') {
+                categoricalOptions.classList.remove('hidden');
+                updateCategoryInputs();
+            } else {
+                categoricalOptions.classList.add('hidden');
+            }
+        }
+
+        function updateCategoryInputs() {
+            const numCats = parseInt(document.getElementById('numCategories').value);
+            const container = document.getElementById('categoryBreaksContainer');
+            
+            // Default even breaks from 0 to 100
+            const defaultBreaks = [];
+            for (let i = 0; i <= numCats; i++) {
+                defaultBreaks.push(Math.round((100 / numCats) * i));
+            }
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;">';
+            
+            for (let i = 0; i < numCats; i++) {
+                const lower = defaultBreaks[i];
+                const upper = defaultBreaks[i + 1];
+                html += `
+                    <div style="text-align: center;">
+                        <label style="font-size: 11px; color: #856404;">Cat ${i + 1}</label>
+                        <div style="display: flex; gap: 2px; align-items: center;">
+                            <input type="number" id="break_${i}_lower" class="form-control" value="${lower}" min="0" max="100" style="padding: 4px; font-size: 12px; width: 50px;">
+                            <span>-</span>
+                            <input type="number" id="break_${i}_upper" class="form-control" value="${upper}" min="0" max="100" style="padding: 4px; font-size: 12px; width: 50px;">
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function setDefaultBreaks() {
+            updateCategoryInputs();
+        }
+
+        function setWHOBreaks() {
+            document.getElementById('numCategories').value = '4';
+            const container = document.getElementById('categoryBreaksContainer');
+            
+            const whoBreaks = [
+                { lower: 0, upper: 5, label: 'Low' },
+                { lower: 5, upper: 10, label: 'Moderate' },
+                { lower: 10, upper: 20, label: 'High' },
+                { lower: 20, upper: 100, label: 'Very High' }
+            ];
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;">';
+            
+            whoBreaks.forEach((b, i) => {
+                html += `
+                    <div style="text-align: center;">
+                        <label style="font-size: 11px; color: #856404;">${b.label}</label>
+                        <div style="display: flex; gap: 2px; align-items: center;">
+                            <input type="number" id="break_${i}_lower" class="form-control" value="${b.lower}" min="0" max="100" style="padding: 4px; font-size: 12px; width: 50px;">
+                            <span>-</span>
+                            <input type="number" id="break_${i}_upper" class="form-control" value="${b.upper}" min="0" max="100" style="padding: 4px; font-size: 12px; width: 50px;">
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function getCategoryBreaks() {
+            const numCats = parseInt(document.getElementById('numCategories').value);
+            const breaks = [];
+            
+            for (let i = 0; i < numCats; i++) {
+                const lower = parseFloat(document.getElementById(`break_${i}_lower`).value) || 0;
+                const upper = parseFloat(document.getElementById(`break_${i}_upper`).value) || 100;
+                breaks.push({ lower, upper });
+            }
+            
+            return breaks;
+        }
+
+        function getLegendConfig() {
+            const mode = document.getElementById('legendMode').value;
+            
+            if (mode === 'fixed') {
+                return { mode: 'fixed', min: 0, max: 100 };
+            } else if (mode === 'categorical') {
+                return { mode: 'categorical', breaks: getCategoryBreaks() };
+            } else {
+                return { mode: 'dynamic' };
+            }
+        }
+
+        function calculateTPR() {
+            const confirmedCol = document.getElementById('confirmedColumn').value;
+            const testCol = document.getElementById('testColumn').value;
+            const yearCol = document.getElementById('yearColumn').value;
+            const locationCols = selectedExcelColumns;
+            const geoCols = selectedShapeColumns;
+
+            // Validation
+            if (!confirmedCol || !testCol || !yearCol) {
+                showAlert('Please select Confirmed, Test, and Year columns', 'error');
+                return;
+            }
+
+            if (locationCols.length === 0 || geoCols.length === 0) {
+                showAlert('Please select merge columns from both Excel and Shapefile', 'error');
+                return;
+            }
+
+            if (locationCols.length !== geoCols.length) {
+                showAlert(`Column count mismatch: ${locationCols.length} Excel columns vs ${geoCols.length} Shapefile properties`, 'error');
+                return;
+            }
+
+            const selectedYears = Array.from(document.querySelectorAll('#yearCheckboxes input:checked')).map(cb => cb.value);
+            if (selectedYears.length === 0) {
+                showAlert('Please select at least one year', 'error');
+                return;
+            }
+
+            // Store merge config globally
+            window.mergeConfig = { locationCols, geoCols };
+
+            // Show processing
+            document.getElementById('configSection').classList.add('hidden');
+            document.getElementById('processingSection').classList.remove('hidden');
+
+            setTimeout(() => {
+                // Calculate TPR by location key and year
+                tprResults = {};
+                const locationYearData = {};
+
+                // Build lookup for shapefile keys
+                const shapeKeyToDisplayName = {};
+                geoData.features.forEach(feature => {
+                    const key = geoCols.map(col => String(feature.properties[col] || '').trim().toLowerCase()).join('|');
+                    const displayName = geoCols.map(col => feature.properties[col]).join(' - ');
+                    shapeKeyToDisplayName[key] = displayName;
+                });
+
+                rawData.forEach(row => {
+                    const year = String(row[yearCol]);
+                    const locationKey = locationCols.map(col => String(row[col] || '').trim().toLowerCase()).join('|');
+                    const confirmed = parseFloat(row[confirmedCol]) || 0;
+                    const tests = parseFloat(row[testCol]) || 0;
+
+                    if (!selectedYears.includes(year)) return;
+                    if (!locationKey || locationKey.includes('undefined')) return;
+
+                    // Only include if this location key exists in shapefile (inner join)
+                    if (!shapeKeyToDisplayName[locationKey]) return;
+
+                    const dataKey = `${locationKey}|${year}`;
+                    if (!locationYearData[dataKey]) {
+                        locationYearData[dataKey] = { 
+                            confirmed: 0, 
+                            tests: 0, 
+                            locationKey, 
+                            displayName: shapeKeyToDisplayName[locationKey],
+                            year 
+                        };
+                    }
+                    locationYearData[dataKey].confirmed += confirmed;
+                    locationYearData[dataKey].tests += tests;
+                });
+
+                // Calculate TPR for each location-year combination
+                Object.values(locationYearData).forEach(item => {
+                    const tpr = item.tests > 0 ? (item.confirmed / item.tests) * 100 : 0;
+                    
+                    if (!tprResults[item.locationKey]) {
+                        tprResults[item.locationKey] = { displayName: item.displayName };
+                    }
+                    tprResults[item.locationKey][item.year] = {
+                        confirmed: item.confirmed,
+                        tests: item.tests,
+                        tpr: tpr
+                    };
+                });
+
+                // Generate results
+                displayResults(selectedYears);
+
+            }, 500);
+        }
+
+        function displayResults(selectedYears) {
+            document.getElementById('processingSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+
+            // Calculate summary stats
+            let totalConfirmed = 0;
+            let totalTests = 0;
+            let allTPRs = [];
+
+            Object.values(tprResults).forEach(locationData => {
+                Object.keys(locationData).forEach(key => {
+                    if (key === 'displayName') return; // Skip displayName property
+                    const data = locationData[key];
+                    if (data && data.confirmed !== undefined) {
+                        totalConfirmed += data.confirmed;
+                        totalTests += data.tests;
+                        if (data.tpr > 0) allTPRs.push(data.tpr);
+                    }
+                });
+            });
+
+            const overallTPR = totalTests > 0 ? (totalConfirmed / totalTests) * 100 : 0;
+            const avgTPR = allTPRs.length > 0 ? allTPRs.reduce((a, b) => a + b, 0) / allTPRs.length : 0;
+            const minTPR = allTPRs.length > 0 ? Math.min(...allTPRs) : 0;
+            const maxTPR = allTPRs.length > 0 ? Math.max(...allTPRs) : 0;
+
+            // Display summary stats
+            const matchedLocations = Object.keys(tprResults).length;
+            document.getElementById('summaryStats').innerHTML = `
+                <div class="stats-card">
+                    <h4>Matched Locations</h4>
+                    <div class="metric-value">${matchedLocations}</div>
+                    <p>Inner join result</p>
+                </div>
+                <div class="stats-card">
+                    <h4>Total Confirmed</h4>
+                    <div class="metric-value">${totalConfirmed.toLocaleString()}</div>
+                    <p>Positive cases</p>
+                </div>
+                <div class="stats-card">
+                    <h4>Total Tests</h4>
+                    <div class="metric-value">${totalTests.toLocaleString()}</div>
+                    <p>Tests conducted</p>
+                </div>
+                <div class="stats-card warning">
+                    <h4>Overall TPR</h4>
+                    <div class="metric-value">${overallTPR.toFixed(1)}%</div>
+                    <p>Test Positivity</p>
+                </div>
+                <div class="stats-card success">
+                    <h4>Min TPR</h4>
+                    <div class="metric-value">${minTPR.toFixed(1)}%</div>
+                    <p>Lowest rate</p>
+                </div>
+                <div class="stats-card warning">
+                    <h4>Max TPR</h4>
+                    <div class="metric-value">${maxTPR.toFixed(1)}%</div>
+                    <p>Highest rate</p>
+                </div>
+            `;
+
+            // Generate maps
+            generateMaps(selectedYears, minTPR, maxTPR);
+
+            // Generate data table
+            generateTPRTable(selectedYears);
+
+            showAlert('TPR calculation complete! Maps generated.', 'success');
+        }
+
+        function generateMaps(selectedYears, globalMin, globalMax) {
+            const mapColumns = parseInt(document.getElementById('mapColumns').value);
+            const mapWidth = parseInt(document.getElementById('mapWidth').value);
+            const mapHeight = parseInt(document.getElementById('mapHeight').value);
+            const legendType = document.getElementById('legendType').value;
+            const legendConfig = getLegendConfig();
+
+            // Store for download functions
+            window.mapConfig = { mapColumns, mapWidth, mapHeight, legendType, legendConfig, selectedYears };
+
+            const container = document.getElementById('mapsContainer');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${mapColumns}, 1fr)`;
+
+            // Determine legend min/max based on config
+            let legendMin = 0;
+            let legendMax = 100;
+            
+            if (legendConfig.mode === 'dynamic') {
+                legendMin = globalMin;
+                legendMax = globalMax;
+            } else if (legendConfig.mode === 'fixed') {
+                legendMin = 0;
+                legendMax = 100;
+            }
+
+            // Handle shared legend
+            const sharedLegendContainer = document.getElementById('sharedLegendContainer');
+            if (legendType === 'shared') {
+                sharedLegendContainer.classList.remove('hidden');
+                createLegend(document.getElementById('sharedLegend'), legendMin, legendMax, legendConfig);
+            } else {
+                sharedLegendContainer.classList.add('hidden');
+            }
+
+            // Create a map for each year
+            selectedYears.forEach((year, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'map-wrapper';
+                wrapper.id = `map-wrapper-${year}`;
+                wrapper.innerHTML = `
+                    <h5 id="map-title-${year}">Year: ${year}</h5>
+                    <canvas id="map-${year}" class="map-canvas" width="${mapWidth}" height="${mapHeight}"></canvas>
+                    ${legendType === 'individual' ? `<div class="legend-container" id="legend-${year}"></div>` : ''}
+                    <button class="btn btn-secondary" style="margin-top: 10px; padding: 8px 16px; font-size: 12px;" onclick="downloadSingleMapWithLegend('${year}')">Download</button>
+                `;
+                container.appendChild(wrapper);
+
+                // Draw the map
+                setTimeout(() => {
+                    drawChoroplethMap(`map-${year}`, year, legendMin, legendMax, legendConfig);
+                    
+                    if (legendType === 'individual') {
+                        createLegend(document.getElementById(`legend-${year}`), legendMin, legendMax, legendConfig);
+                    }
+                }, 50 * index);
+            });
+        }
+
+        function drawChoroplethMap(canvasId, year, minVal, maxVal, legendConfig) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const geoCols = window.mergeConfig.geoCols;
+
+            // Clear canvas
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, 0, width, height);
+
+            if (!geoData || !geoData.features) return;
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            
+            geoData.features.forEach(feature => {
+                processCoordinates(feature.geometry, (coord) => {
+                    minX = Math.min(minX, coord[0]);
+                    maxX = Math.max(maxX, coord[0]);
+                    minY = Math.min(minY, coord[1]);
+                    maxY = Math.max(maxY, coord[1]);
+                });
+            });
+
+            // Calculate scale and offset
+            const padding = 20;
+            const scaleX = (width - padding * 2) / (maxX - minX);
+            const scaleY = (height - padding * 2) / (maxY - minY);
+            const scale = Math.min(scaleX, scaleY);
+            
+            const offsetX = padding + (width - padding * 2 - (maxX - minX) * scale) / 2;
+            const offsetY = padding + (height - padding * 2 - (maxY - minY) * scale) / 2;
+
+            // Transform function
+            const transform = (coord) => {
+                return [
+                    offsetX + (coord[0] - minX) * scale,
+                    height - (offsetY + (coord[1] - minY) * scale)
+                ];
+            };
+
+            // Draw features
+            geoData.features.forEach(feature => {
+                // Build location key from multiple geo columns
+                const locationKey = geoCols.map(col => String(feature.properties[col] || '').trim().toLowerCase()).join('|');
+                let tpr = null;
+                
+                if (tprResults[locationKey] && tprResults[locationKey][year]) {
+                    tpr = tprResults[locationKey][year].tpr;
+                }
+
+                // Get color based on legend config
+                const color = tpr !== null ? getColor(tpr, minVal, maxVal, legendConfig) : '#cccccc';
+
+                // Draw polygon(s)
+                ctx.fillStyle = color;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+
+                drawGeometry(ctx, feature.geometry, transform);
+            });
+
+            // Store map data for tooltips and downloads
+            canvas.mapData = { year, geoCols, minVal, maxVal, legendConfig, transform, minX, minY, maxX, maxY, scale, offsetX, offsetY };
+        }
+
+        function processCoordinates(geometry, callback) {
+            if (geometry.type === 'Polygon') {
+                geometry.coordinates[0].forEach(callback);
+            } else if (geometry.type === 'MultiPolygon') {
+                geometry.coordinates.forEach(polygon => {
+                    polygon[0].forEach(callback);
+                });
+            }
+        }
+
+        function drawGeometry(ctx, geometry, transform) {
+            if (geometry.type === 'Polygon') {
+                drawPolygon(ctx, geometry.coordinates, transform);
+            } else if (geometry.type === 'MultiPolygon') {
+                geometry.coordinates.forEach(polygon => {
+                    drawPolygon(ctx, polygon, transform);
+                });
+            }
+        }
+
+        function drawPolygon(ctx, coordinates, transform) {
+            ctx.beginPath();
+            coordinates.forEach((ring, ringIndex) => {
+                ring.forEach((coord, i) => {
+                    const [x, y] = transform(coord);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                ctx.closePath();
+            });
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function getColor(value, min, max, legendConfig) {
+            const palette = colorPalettes[selectedPalette];
+            
+            // Handle categorical mode
+            if (legendConfig && legendConfig.mode === 'categorical' && legendConfig.breaks) {
+                const breaks = legendConfig.breaks;
+                for (let i = 0; i < breaks.length; i++) {
+                    if (value >= breaks[i].lower && value < breaks[i].upper) {
+                        // Map category index to palette color
+                        const colorIndex = Math.floor((i / breaks.length) * (palette.length - 1));
+                        return palette[colorIndex];
+                    }
+                    // Handle upper boundary of last category
+                    if (i === breaks.length - 1 && value >= breaks[i].lower && value <= breaks[i].upper) {
+                        return palette[palette.length - 1];
+                    }
+                }
+                return '#cccccc'; // No matching category
+            }
+            
+            // Continuous mode (fixed or dynamic)
+            if (max === min) return palette[2];
+            
+            const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+            const index = Math.min(Math.floor(normalized * (palette.length - 1)), palette.length - 2);
+            const t = (normalized * (palette.length - 1)) - index;
+            
+            return interpolateColor(palette[index], palette[index + 1], t);
+        }
+
+        function interpolateColor(color1, color2, t) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+            
+            const r = Math.round(c1.r + (c2.r - c1.r) * t);
+            const g = Math.round(c1.g + (c2.g - c1.g) * t);
+            const b = Math.round(c1.b + (c2.b - c1.b) * t);
+            
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 0};
+        }
+
+        function createLegend(container, min, max, legendConfig) {
+            if (!container) return;
+            
+            const palette = colorPalettes[selectedPalette];
+            
+            // Handle categorical mode
+            if (legendConfig && legendConfig.mode === 'categorical' && legendConfig.breaks) {
+                const breaks = legendConfig.breaks;
+                let html = '<div class="legend-title">Test Positivity Rate (%)</div>';
+                html += '<div style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 8px;">';
+                
+                breaks.forEach((b, i) => {
+                    const colorIndex = Math.floor((i / breaks.length) * (palette.length - 1));
+                    const color = palette[colorIndex];
+                    html += `
+                        <div style="display: flex; align-items: center; gap: 3px; font-size: 10px;">
+                            <div style="width: 16px; height: 12px; background: ${color}; border: 1px solid #333; border-radius: 2px;"></div>
+                            <span>${b.lower}-${b.upper}%</span>
+                        </div>
+                    `;
+                });
+                
+                html += '<div style="display: flex; align-items: center; gap: 3px; font-size: 10px;">';
+                html += '<div style="width: 16px; height: 12px; background: #cccccc; border: 1px solid #333; border-radius: 2px;"></div>';
+                html += '<span>No data</span></div>';
+                html += '</div>';
+                
+                container.innerHTML = html;
+                return;
+            }
+            
+            // Continuous gradient legend
+            const gradientColors = palette.join(', ');
+            
+            container.innerHTML = `
+                <div class="legend-title">Test Positivity Rate (%)</div>
+                <div class="legend-scale">
+                    <span style="font-size: 11px; color: #666;">${min.toFixed(0)}%</span>
+                    <div class="legend-gradient" style="background: linear-gradient(to right, ${gradientColors});"></div>
+                    <span style="font-size: 11px; color: #666;">${max.toFixed(0)}%</span>
+                </div>
+            `;
+        }
+
+        function generateTPRTable(selectedYears) {
+            const table = document.getElementById('tprTable');
+            
+            let html = '<thead><tr><th>Location</th>';
+            selectedYears.forEach(year => {
+                html += `<th>TPR ${year} (%)</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            Object.keys(tprResults).sort().forEach(locationKey => {
+                const locationData = tprResults[locationKey];
+                const displayName = locationData.displayName || locationKey;
+                
+                html += `<tr><td>${displayName}</td>`;
+                selectedYears.forEach(year => {
+                    const data = locationData[year];
+                    if (data && data.tpr !== undefined) {
+                        const tprClass = data.tpr >= 10 ? 'tpr-high' : data.tpr >= 5 ? 'tpr-medium' : 'tpr-low';
+                        html += `<td class="${tprClass}">${data.tpr.toFixed(2)}%</td>`;
+                    } else {
+                        html += '<td style="color: #999;">N/A</td>';
+                    }
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function downloadTPRExcel() {
+            const selectedYears = Array.from(document.querySelectorAll('#yearCheckboxes input:checked')).map(cb => cb.value);
+            
+            const exportData = [];
+            Object.keys(tprResults).sort().forEach(locationKey => {
+                const locationData = tprResults[locationKey];
+                const displayName = locationData.displayName || locationKey;
+                
+                selectedYears.forEach(year => {
+                    const data = locationData[year];
+                    if (data && data.tpr !== undefined) {
+                        exportData.push({
+                            Location: displayName,
+                            Year: year,
+                            Confirmed: data.confirmed,
+                            Tests: data.tests,
+                            'TPR (%)': data.tpr.toFixed(2)
+                        });
+                    }
+                });
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'TPR Data');
+            XLSX.writeFile(wb, 'test_positivity_rate_data.xlsx');
+            
+            showAlert('Excel file downloaded!', 'success');
+        }
+
+        function downloadTPRCSV() {
+            const selectedYears = Array.from(document.querySelectorAll('#yearCheckboxes input:checked')).map(cb => cb.value);
+            
+            const exportData = [];
+            Object.keys(tprResults).sort().forEach(locationKey => {
+                const locationData = tprResults[locationKey];
+                const displayName = locationData.displayName || locationKey;
+                
+                selectedYears.forEach(year => {
+                    const data = locationData[year];
+                    if (data && data.tpr !== undefined) {
+                        exportData.push({
+                            Location: displayName,
+                            Year: year,
+                            Confirmed: data.confirmed,
+                            Tests: data.tests,
+                            'TPR (%)': data.tpr.toFixed(2)
+                        });
+                    }
+                });
+            });
+
+            const csv = Papa.unparse(exportData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'test_positivity_rate_data.csv';
+            link.click();
+            
+            showAlert('CSV file downloaded!', 'success');
+        }
+
+        function downloadSingleMap(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showAlert('Map downloaded!', 'success');
+        }
+
+        function downloadSingleMapWithLegend(year) {
+            const mapCanvas = document.getElementById(`map-${year}`);
+            if (!mapCanvas) return;
+            
+            const mapData = mapCanvas.mapData;
+            const config = window.mapConfig;
+            const palette = colorPalettes[selectedPalette];
+            
+            // Create new canvas with title and legend
+            const titleHeight = 40;
+            const legendHeight = 60;
+            const padding = 10;
+            const totalWidth = mapCanvas.width + padding * 2;
+            const totalHeight = titleHeight + mapCanvas.height + legendHeight + padding * 2;
+            
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = totalWidth;
+            exportCanvas.height = totalHeight;
+            const ctx = exportCanvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+            
+            // Title
+            ctx.fillStyle = '#004080';
+            ctx.font = 'bold 18px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Test Positivity Rate - Year: ${year}`, totalWidth / 2, 28);
+            
+            // Map
+            ctx.drawImage(mapCanvas, padding, titleHeight);
+            
+            // Legend
+            const legendY = titleHeight + mapCanvas.height + 15;
+            const legendWidth = totalWidth - 80;
+            const legendX = 40;
+            
+            ctx.fillStyle = '#004080';
+            ctx.font = 'bold 12px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Test Positivity Rate (%)', totalWidth / 2, legendY);
+            
+            if (mapData.legendConfig && mapData.legendConfig.mode === 'categorical' && mapData.legendConfig.breaks) {
+                // Categorical legend
+                const breaks = mapData.legendConfig.breaks;
+                const boxWidth = Math.min(50, legendWidth / (breaks.length + 1));
+                const startX = (totalWidth - (breaks.length + 1) * boxWidth) / 2;
+                
+                breaks.forEach((b, i) => {
+                    const colorIndex = Math.floor((i / breaks.length) * (palette.length - 1));
+                    const color = palette[colorIndex];
+                    const x = startX + i * boxWidth;
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, legendY + 8, boxWidth - 4, 15);
+                    ctx.strokeStyle = '#333';
+                    ctx.strokeRect(x, legendY + 8, boxWidth - 4, 15);
+                    
+                    ctx.fillStyle = '#333';
+                    ctx.font = '10px Oswald, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${b.lower}-${b.upper}%`, x + (boxWidth - 4) / 2, legendY + 38);
+                });
+                
+                // No data box
+                const noDataX = startX + breaks.length * boxWidth;
+                ctx.fillStyle = '#cccccc';
+                ctx.fillRect(noDataX, legendY + 8, boxWidth - 4, 15);
+                ctx.strokeStyle = '#333';
+                ctx.strokeRect(noDataX, legendY + 8, boxWidth - 4, 15);
+                ctx.fillStyle = '#333';
+                ctx.fillText('No data', noDataX + (boxWidth - 4) / 2, legendY + 38);
+                
+            } else {
+                // Gradient legend
+                const gradient = ctx.createLinearGradient(legendX, 0, legendX + legendWidth, 0);
+                palette.forEach((color, i) => {
+                    gradient.addColorStop(i / (palette.length - 1), color);
+                });
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(legendX, legendY + 8, legendWidth, 15);
+                ctx.strokeStyle = '#333';
+                ctx.strokeRect(legendX, legendY + 8, legendWidth, 15);
+                
+                // Labels
+                ctx.fillStyle = '#333';
+                ctx.font = '11px Oswald, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${mapData.minVal.toFixed(0)}%`, legendX, legendY + 38);
+                ctx.textAlign = 'right';
+                ctx.fillText(`${mapData.maxVal.toFixed(0)}%`, legendX + legendWidth, legendY + 38);
+            }
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = `tpr_map_${year}.png`;
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+            showAlert(`Map for ${year} downloaded with title and legend!`, 'success');
+        }
+
+        function downloadSubplotImage() {
+            const config = window.mapConfig;
+            if (!config || !config.selectedYears || config.selectedYears.length === 0) {
+                showAlert('No maps to download', 'error');
+                return;
+            }
+            
+            const years = config.selectedYears;
+            const cols = config.mapColumns;
+            const rows = Math.ceil(years.length / cols);
+            const mapWidth = config.mapWidth;
+            const mapHeight = config.mapHeight;
+            const palette = colorPalettes[selectedPalette];
+            
+            // Calculate dimensions
+            const titleHeight = 50;
+            const cellTitleHeight = 25;
+            const legendHeight = 70;
+            const cellPadding = 15;
+            const mainPadding = 20;
+            
+            const cellWidth = mapWidth + cellPadding * 2;
+            const cellHeight = mapHeight + cellTitleHeight + cellPadding;
+            
+            const totalWidth = cols * cellWidth + mainPadding * 2;
+            const totalHeight = titleHeight + rows * cellHeight + legendHeight + mainPadding * 2;
+            
+            // Create canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = totalWidth;
+            exportCanvas.height = totalHeight;
+            const ctx = exportCanvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+            
+            // Main title
+            ctx.fillStyle = '#004080';
+            ctx.font = 'bold 22px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Test Positivity Rate by Year', totalWidth / 2, 35);
+            
+            // Draw each map
+            years.forEach((year, index) => {
+                const row = Math.floor(index / cols);
+                const col = index % cols;
+                
+                const x = mainPadding + col * cellWidth + cellPadding;
+                const y = titleHeight + row * cellHeight;
+                
+                // Cell title
+                ctx.fillStyle = '#004080';
+                ctx.font = 'bold 14px Oswald, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Year: ${year}`, x + mapWidth / 2, y + 18);
+                
+                // Map
+                const mapCanvas = document.getElementById(`map-${year}`);
+                if (mapCanvas) {
+                    ctx.drawImage(mapCanvas, x, y + cellTitleHeight);
+                    
+                    // Border
+                    ctx.strokeStyle = '#004080';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x - 2, y + cellTitleHeight - 2, mapWidth + 4, mapHeight + 4);
+                }
+            });
+            
+            // Shared legend at bottom
+            const legendY = titleHeight + rows * cellHeight + 15;
+            const legendWidth = Math.min(totalWidth - 100, 400);
+            const legendX = (totalWidth - legendWidth) / 2;
+            
+            ctx.fillStyle = '#004080';
+            ctx.font = 'bold 14px Oswald, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Test Positivity Rate (%)', totalWidth / 2, legendY);
+            
+            const legendConfig = config.legendConfig;
+            
+            if (legendConfig && legendConfig.mode === 'categorical' && legendConfig.breaks) {
+                // Categorical legend
+                const breaks = legendConfig.breaks;
+                const boxWidth = Math.min(60, legendWidth / (breaks.length + 1));
+                const startX = (totalWidth - (breaks.length + 1) * boxWidth) / 2;
+                
+                breaks.forEach((b, i) => {
+                    const colorIndex = Math.floor((i / breaks.length) * (palette.length - 1));
+                    const color = palette[colorIndex];
+                    const bx = startX + i * boxWidth;
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(bx, legendY + 10, boxWidth - 6, 18);
+                    ctx.strokeStyle = '#333';
+                    ctx.strokeRect(bx, legendY + 10, boxWidth - 6, 18);
+                    
+                    ctx.fillStyle = '#333';
+                    ctx.font = '11px Oswald, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${b.lower}-${b.upper}%`, bx + (boxWidth - 6) / 2, legendY + 42);
+                });
+                
+                // No data
+                const noDataX = startX + breaks.length * boxWidth;
+                ctx.fillStyle = '#cccccc';
+                ctx.fillRect(noDataX, legendY + 10, boxWidth - 6, 18);
+                ctx.strokeStyle = '#333';
+                ctx.strokeRect(noDataX, legendY + 10, boxWidth - 6, 18);
+                ctx.fillStyle = '#333';
+                ctx.fillText('No data', noDataX + (boxWidth - 6) / 2, legendY + 42);
+                
+            } else {
+                // Gradient legend
+                const gradient = ctx.createLinearGradient(legendX, 0, legendX + legendWidth, 0);
+                palette.forEach((color, i) => {
+                    gradient.addColorStop(i / (palette.length - 1), color);
+                });
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(legendX, legendY + 10, legendWidth, 18);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(legendX, legendY + 10, legendWidth, 18);
+                
+                // Labels - use fixed 0-100 for fixed mode
+                const minLabel = legendConfig.mode === 'fixed' ? 0 : (legendConfig.min || 0);
+                const maxLabel = legendConfig.mode === 'fixed' ? 100 : (legendConfig.max || 100);
+                
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Oswald, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${minLabel}%`, legendX, legendY + 42);
+                ctx.textAlign = 'right';
+                ctx.fillText(`${maxLabel}%`, legendX + legendWidth, legendY + 42);
+            }
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = 'tpr_choropleth_subplots.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+            showAlert('Subplot image downloaded!', 'success');
+        }
+
+        function downloadAllMapsIndividual() {
+            const selectedYears = Array.from(document.querySelectorAll('#yearCheckboxes input:checked')).map(cb => cb.value);
+            
+            selectedYears.forEach((year, index) => {
+                setTimeout(() => {
+                    downloadSingleMapWithLegend(year);
+                }, index * 500);
+            });
+        }
+
+        function downloadAllMaps() {
+            downloadAllMapsIndividual();
+        }
+
+        function backToConfig() {
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('configSection').classList.remove('hidden');
+        }
+
+        function resetAll() {
+            rawData = null;
+            geoData = null;
+            tprResults = null;
+            availableColumns = [];
+            availableYears = [];
+            geoProperties = [];
+            
+            // Clear shapefile buffers
+            shpBuffer = null;
+            dbfBuffer = null;
+            shxBuffer = null;
+            prjBuffer = null;
+            
+            // Clear merge config and selections
+            window.mergeConfig = null;
+            selectedExcelColumns = [];
+            selectedShapeColumns = [];
+
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('configSection').classList.add('hidden');
+            document.getElementById('processingSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            
+            document.getElementById('dataFileInput').value = '';
+            document.getElementById('shapefileZipInput').value = '';
+            document.getElementById('shpFileInput').value = '';
+            document.getElementById('dbfFileInput').value = '';
+            document.getElementById('shxFileInput').value = '';
+            document.getElementById('prjFileInput').value = '';
+            
+            document.getElementById('dataFileName').textContent = '';
+            document.getElementById('geoFileName').textContent = '';
+            document.getElementById('shpFileName').textContent = '';
+            document.getElementById('dbfFileName').textContent = '';
+            document.getElementById('shxFileName').textContent = '';
+            document.getElementById('prjFileName').textContent = '';
+            
+            document.getElementById('processShapefilesBtn').disabled = true;
+            document.getElementById('mergePreview').classList.add('hidden');
+            document.getElementById('alertContainer').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
